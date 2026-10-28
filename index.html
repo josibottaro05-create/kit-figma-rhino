@@ -714,11 +714,13 @@ document.querySelectorAll('.story').forEach(story => {
 
 
 
-// Formulario: se guarda en la base del artifact si el visitante puede escribir
+// Formulario: las respuestas se mandan a un Google Forms y llegan a su planilla de respuestas
 const form = document.getElementById('form-interes');
 const estado = document.getElementById('f-estado');
 const enviar = document.getElementById('f-enviar');
-const SIN_GUARDAR = 'No se pudo guardar desde acá. Acercate al final de la clase y te los paso.';
+const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSeUZIihHbUL-HUgfPBqe2ssL_4jsNltmGvm5P0XPCNQqxFTIQ/formResponse';
+const CAMPO = { nombre: 'entry.1244799544', contacto: 'entry.678439038', herramientas: 'entry.1975932375', comentario: 'entry.2062660326' };
+const SIN_GUARDAR = 'No se pudo enviar. Revisá tu conexión y probá de nuevo, o avisame al final de la clase.';
 
 form.addEventListener('submit', async e => {
   e.preventDefault();
@@ -726,15 +728,16 @@ form.addEventListener('submit', async e => {
   const contacto = document.getElementById('f-contacto').value.trim();
   if (!nombre || !contacto) { estado.className = 'estado'; estado.textContent = 'Completá tu nombre y un contacto.'; return; }
   const herramientas = [...form.querySelectorAll('.checks input:checked')].map(c => c.value);
-  enviar.disabled = true; estado.className = 'estado'; estado.textContent = 'Guardando…';
+  enviar.disabled = true; estado.className = 'estado'; estado.textContent = 'Enviando…';
   try {
-    const db = window.claude ? await window.claude.use('db') : null;
-    const user = window.claude ? await window.claude.use('user') : null;
-    if (!db) throw new Error('sin db');
-    const datos = { nombre, contacto, herramientas, comentario: document.getElementById('f-coment').value.trim(), fecha: new Date().toISOString() };
-    const id = user ? await user.id() : null;
-    if (id) await db.doc('interesados/' + id).set(datos);
-    else await db.collection('interesados').add(datos);
+    const datos = new URLSearchParams();
+    datos.append(CAMPO.nombre, nombre);
+    datos.append(CAMPO.contacto, contacto);
+    herramientas.forEach(h => datos.append(CAMPO.herramientas, h));
+    const coment = document.getElementById('f-coment').value.trim();
+    if (coment) datos.append(CAMPO.comentario, coment);
+    // no-cors: Google no deja leer la respuesta, pero la recibe igual; solo falla si no hay conexión
+    await fetch(FORM_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: datos });
     estado.className = 'estado ok';
     estado.textContent = '¡Listo, ' + nombre + '! Te escribo para pasarte los archivos.';
   } catch (err) {
