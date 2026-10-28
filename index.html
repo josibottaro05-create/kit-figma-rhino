@@ -175,6 +175,11 @@ textarea{min-height:80px;resize:vertical}
 .checks input{margin-top:4px;accent-color:var(--ink)}
 .btn{font:700 16px var(--helv);background:var(--ink);color:var(--sheet);border:0;border-radius:999px;padding:15px 20px;cursor:pointer}
 .btn:disabled{opacity:.55;cursor:default}
+a.btn{display:inline-block;text-align:center;text-decoration:none}
+.entrega{background:var(--paper);border-radius:24px;padding:22px 20px;display:flex;flex-direction:column;gap:14px}
+.entrega h3{font-size:24px;letter-spacing:-.025em;line-height:1.1}
+.entrega ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:15px}
+.entrega .aparte{font-size:14.5px;color:var(--muted)}
 .estado{font-size:14.5px;color:var(--muted)}
 .estado.ok{color:var(--ink);font-weight:700}
 .hint{font-size:13px;color:var(--muted);font-weight:400}
@@ -449,7 +454,7 @@ textarea{min-height:80px;resize:vertical}
 
   <section class="section" id="quiero">
     <h2>¿Los querés?</h2>
-    <p>Dejá tus datos y te paso <strong>los archivos</strong> con la guía de instalación.</p>
+    <p>Dejá tus datos y te paso <strong>la carpeta</strong> al instante, con la guía de instalación.</p>
     <form id="form-interes" novalidate>
       <div class="field"><label for="f-nombre">Nombre</label><input type="text" id="f-nombre" autocomplete="name" required></div>
       <div class="field"><label for="f-contacto">WhatsApp, mail o Instagram</label><input type="text" id="f-contacto" required></div>
@@ -467,6 +472,18 @@ textarea{min-height:80px;resize:vertical}
       <button class="btn" type="submit" id="f-enviar">Quiero las herramientas</button>
       <p class="estado" id="f-estado" aria-live="polite"></p>
     </form>
+    <div class="entrega" id="entrega" hidden>
+      <h3>¡Listo, <span id="e-nombre"></span>!</h3>
+      <p>Acá está la carpeta con todo el kit.</p>
+      <a class="btn" id="e-link" target="_blank" rel="noopener">Abrir la carpeta</a>
+      <ol>
+        <li>Abrí la carpeta e iniciá sesión con tu cuenta de Microsoft. Si no tenés, creás una gratis con cualquier mail.</li>
+        <li>Tildá <code>Kit-Morfologia</code> y tocá «Añadir <strong>acceso directo</strong> a Mis archivos».</li>
+        <li>Abrila desde el Explorador de tu compu y hacé doble clic en <code>0-Guia-de-instalacion.html</code>.</li>
+      </ol>
+      <p class="aparte">Si no querés cuenta, tocá «Descargar» y descomprimila. Funciona igual, pero esa copia no se actualiza sola.</p>
+      <p class="aparte">Si algo no se entiende, la guía que viene adentro de la carpeta lo explica paso a paso.</p>
+    </div>
   </section>
 
   <footer class="rotulo-pie">
@@ -720,7 +737,9 @@ const estado = document.getElementById('f-estado');
 const enviar = document.getElementById('f-enviar');
 const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSeUZIihHbUL-HUgfPBqe2ssL_4jsNltmGvm5P0XPCNQqxFTIQ/formResponse';
 const CAMPO = { nombre: 'entry.1244799544', contacto: 'entry.678439038', herramientas: 'entry.1975932375', comentario: 'entry.2062660326' };
-const SIN_GUARDAR = 'No se pudo enviar. Revisá tu conexión y probá de nuevo, o avisame al final de la clase.';
+const CARPETA_URL = 'https://1drv.ms/f/c/1d8cf68e63cae26e/IgDO9fLKXWCSTJAXeYnYU3Q8AXroQuBL0rwa2LS53j5sQNw?e=1batbL';
+document.getElementById('e-link').href = CARPETA_URL;
+const SIN_GUARDAR = 'No se pudo enviar. Revisá tu conexión y probá de nuevo.';
 
 form.addEventListener('submit', async e => {
   e.preventDefault();
@@ -738,8 +757,12 @@ form.addEventListener('submit', async e => {
     if (coment) datos.append(CAMPO.comentario, coment);
     // no-cors: Google no deja leer la respuesta, pero la recibe igual; solo falla si no hay conexión
     await fetch(FORM_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: datos });
-    estado.className = 'estado ok';
-    estado.textContent = '¡Listo, ' + nombre + '! Te escribo para pasarte los archivos.';
+    // Enviado: se reemplaza el formulario por la carpeta, para que la persona la tenga al instante
+    document.getElementById('e-nombre').textContent = nombre;
+    form.hidden = true;
+    const entrega = document.getElementById('entrega');
+    entrega.hidden = false;
+    entrega.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
   } catch (err) {
     estado.className = 'estado';
     estado.textContent = SIN_GUARDAR;
